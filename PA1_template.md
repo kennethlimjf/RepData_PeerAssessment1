@@ -1,12 +1,4 @@
-```{r echo=FALSE,results="hidden"}
-options(scipen=1, digits=2)
-```
----
-title: "Reproducible Research: Peer Assessment 1"
-output: 
-  html_document:
-    keep_md: true
----
+# Reproducible Research: Peer Assessment 1
 =============================================================================================================================
 
 ## Data Analysis on Personal Movements
@@ -20,7 +12,8 @@ It is now possible to collect a large amount of data about personal movement usi
 
 This analysis uses the following R libraries:
 
-```{r loadLibraries, message=FALSE}
+
+```r
 library(dplyr)
 library(ggplot2)
 library(gridExtra)
@@ -28,7 +21,8 @@ library(gridExtra)
 
 First, we read the CSV data into R and then subset of only the completed cases for our analysis:
 
-```{r}
+
+```r
 rawData <- read.csv('activity.csv')
 completeData <- rawData[complete.cases(rawData), ]
 ```
@@ -39,7 +33,8 @@ completeData <- rawData[complete.cases(rawData), ]
 
 Using `dplyr` library, we group the data by date and then sum the total number of steps taken by date. The mean number of steps taken per day is shown in the histogram generated below:
 
-```{r completeCasesHist,fig.height=4,fig.width=5}
+
+```r
 completeData.totalStepsByDay <- completeData %>% group_by(date) %>% summarize(totalSteps=sum(steps))
 hist(
   completeData.totalStepsByDay$totalSteps,
@@ -47,12 +42,11 @@ hist(
   xlab="Total Number of Steps taken per Day"
 )
 ```
-```{r echo=FALSE}
-completeData.meanSteps <- round(mean(completeData.totalStepsByDay$totalSteps), 2)
-completeData.medianSteps <- median(completeData.totalStepsByDay$totalSteps)
-```
 
-The mean and median total number of steps taken per day are `r completeData.meanSteps` and `r completeData.medianSteps` respectively.
+![](PA1_template_files/figure-html/completeCasesHist-1.png) 
+
+
+The mean and median total number of steps taken per day are 10766.19 and 10765 respectively.
 
 ****
 
@@ -60,18 +54,18 @@ The mean and median total number of steps taken per day are `r completeData.mean
 
 To find out the average daily activity pattern, the data is grouped by `interval` this time. A times series plot of the activity pattern is shown below:
 
-```{r avgActivity, fig.height=4}
+
+```r
 completeData.avgStepsByInterval <- completeData %>% group_by(interval) %>% summarize(avgSteps=mean(steps))
 with(completeData.avgStepsByInterval, plot(interval, avgSteps, type="l"))
 ```
 
+![](PA1_template_files/figure-html/avgActivity-1.png) 
 
-```{r, echo=FALSE}
-maxIndex <- which(completeData.avgStepsByInterval$avgSteps == max(completeData.avgStepsByInterval$avgSteps))
-intervalWithMax <- completeData.avgStepsByInterval[maxIndex, ]$interval
-```
 
-Comparing the average acitivity across all the days, the 5-minute interval `r intervalWithMax` contains the maximum number of steps.
+
+
+Comparing the average acitivity across all the days, the 5-minute interval 835 contains the maximum number of steps.
 
 ****
 
@@ -79,15 +73,21 @@ Comparing the average acitivity across all the days, the 5-minute interval `r in
 
 The total number of missing values is:
 
-```{r}
+
+```r
 sum(!complete.cases(rawData))
 ```
 
-In order to deal with the missing steps for some rows, we will replace the missing value with median steps obtained from that same interval. This enables us to obtain a whole number for the missing value, which should be close to what we expect for that missing data point.
+```
+## [1] 2304
+```
+
+In order to deal with the missing steps for some rows, we will replace the missing value with median steps obtained from that same interval. This enables us to obtain a whole number for the missing value, which would be close to what we expect for that missing data point.
 
 Here we create a new dataset with the strategy mentioned above.
 
-```{r results="hide"}
+
+```r
 medianStepsByInterval <- completeData %>% group_by(interval) %>% summarize(medianSteps=median(steps))
 imputedData <- rawData
 naRowIndexes <- which(is.na(rawData$steps))
@@ -97,7 +97,8 @@ imputedData[naRowIndexes, ]$steps <- medianStepsByInterval$medianSteps
 
 Using the imputed data, a new histogram is plotted below:
 
-```{r imputedDataHist,fig.height=4,fig.width=5}
+
+```r
 imputedData.totalStepsByDay <- imputedData %>% group_by(date) %>% summarize(totalSteps=sum(steps))
 hist(
   imputedData.totalStepsByDay$totalSteps,
@@ -106,12 +107,11 @@ hist(
 )
 ```
 
-```{r echo=FALSE}
-imputedData.meanSteps <- mean(imputedData.totalStepsByDay$totalSteps)
-imputedData.medianSteps <- median(imputedData.totalStepsByDay$totalSteps)
-```
+![](PA1_template_files/figure-html/imputedDataHist-1.png) 
 
-The mean and median total number of steps taken per day are `r imputedData.meanSteps` and `r imputedData.medianSteps` respectively. Comparing with the previous results, we see that the mean steps have changed by `r completeData.meanSteps - imputedData.meanSteps` and the median steps have shifted by `r completeData.medianSteps - imputedData.medianSteps`. 
+
+
+The mean and median total number of steps taken per day are 9503.87 and 10395 respectively. Comparing with the previous results, we see that the mean steps have changed by 1262.32 and the median steps have shifted by 370. 
 
 ****
 
@@ -120,7 +120,8 @@ The mean and median total number of steps taken per day are `r imputedData.meanS
 
 To analysis if there are any difference between weekdays and weekends, a new data set with an additional factor variable `dayType` is introduced to indicate whether a day is a `Weekday` or a `Weekend`.
 
-```{r}
+
+```r
 isWeekday <- function(date) {
   weekends <- c("Saturday", "Sunday")
   date <- as.POSIXct(date)
@@ -135,17 +136,21 @@ dayTypeData$dayType <- factor(sapply(dayTypeData$date, isWeekday))
 
 Then, split the data set into 2 sets for weekday and weekends, and summarize the data:
 
-```{r}
+
+```r
 dayTypeData.weekday <- dayTypeData %>% filter(dayType == 'Weekday') %>% group_by(interval) %>% summarize(avgSteps=mean(steps))
 dayTypeData.weekend <- dayTypeData %>% filter(dayType == 'Weekend') %>% group_by(interval) %>% summarize(avgSteps=mean(steps))
 ```
 
 The plot below shows 2 activity charts:
-```{r}
+
+```r
 p1 <- qplot(interval, avgSteps, data=dayTypeData.weekday, geom=c("line"), main="Weekday", ylab="Number of Steps")
 p2 <- qplot(interval, avgSteps, data=dayTypeData.weekend, geom=c("line"), main="Weekend", ylab="Number of Steps")
 grid.arrange(p1, p2, ncol=1)
 ```
+
+![](PA1_template_files/figure-html/unnamed-chunk-10-1.png) 
 
 From the graph, we find that the subject has different activity patterns during weekdays and weekends.
 
